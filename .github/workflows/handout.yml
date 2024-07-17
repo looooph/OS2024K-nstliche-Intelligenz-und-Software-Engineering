@@ -1,4 +1,4 @@
-name: Build folien
+name: Build Handout
 on: [push]
 # Make sure the GITHUB_TOKEN has permission to upload to our releases
 permissions:
@@ -14,17 +14,17 @@ jobs:
         with:
           latexmk_shell_escape: true
           extra_system_packages: "inkscape"
-          working_directory: tex/folien/
-          root_file: OS_2024_presentation_mocsy.tex
+          working_directory: tex/handout/
+          root_file: Handout_OS2024_Mocsy.tex
       - name: Upload PDF file
         uses: actions/upload-artifact@v4
         with:
           name: PDF
-          path: tex/folien/OS_2024_presentation_mocsy.pdf
+          path: tex/handout/Handout_OS2024_Mocsy.pdf
       - name: upload as latest release
         run: |
           cd ${{github.workspace}}
-          gh release upload v0.9.0 tex/folien/OS_2024_presentation_mocsy.pdf
+          gh release upload v0.9.0 tex/handout/Handout_OS2024_Mocsy.pdf
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash
