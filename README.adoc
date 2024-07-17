@@ -8,12 +8,10 @@ Im Oberseminar:Künstliche Intelligenz und Software Engineering - Prof. Andreas 
 
 == Präsentation
 
-[Link zur pdf]
+https://github.com/looooph/OS2024K-nstliche-Intelligenz-und-Software-Engineering/releases/download/v0.9.0/OS_2024_presentation_mocsy.pdf[Link zur pdf]
 
-[Link zur tex]
 
 == Handout
 
-[Link zur pdf]
+https://github.com/looooph/OS2024K-nstliche-Intelligenz-und-Software-Engineering/releases/download/v0.9.0/Handout_OS2024_Mocsy.pdf[Link zur pdf]
 
-[Link zur tex]
