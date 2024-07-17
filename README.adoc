@@ -1,0 +1,19 @@
+= Vortrag zum Thema Sicherung der Korrektheit von durch LLMs erzeugtem Code
+
+Bearbeitet von:
+
+István J. Mócsy, 21INM
+
+Im Oberseminar:Künstliche Intelligenz und Software Engineering - Prof. Andreas Both - Sommersemester 2024 - HTWK Leipzig
+
+== Präsentation
+
+[Link zur pdf]
+
+[Link zur tex]
+
+== Handout
+
+[Link zur pdf]
+
+[Link zur tex]
