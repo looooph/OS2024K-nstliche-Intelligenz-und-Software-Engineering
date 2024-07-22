@@ -24,7 +24,7 @@ jobs:
       - name: upload as latest release
         run: |
           cd ${{github.workspace}}
-          gh release upload v0.9.0 tex/handout/Handout_OS2024_Mocsy.pdf
+          gh release upload v1.0.0 tex/handout/Handout_OS2024_Mocsy.pdf
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash

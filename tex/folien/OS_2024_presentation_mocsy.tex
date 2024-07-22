@@ -6,6 +6,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{ccicons}
+\usepackage{listings}
+\usepackage{amsmath}
+\lstset{basicstyle=\scriptsize\ttfamily}
 \usetheme{default}
 \usebeamercolor{wolverine}
 \useoutertheme{smoothbars}
@@ -24,25 +27,6 @@
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
-
-\usepackage{listings}
-\lstdefinestyle{rdf}{
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\tiny,
-    breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                                  
-    showspaces=false,                
-    showstringspaces=false,
-    showtabs=false,                  
-    tabsize=2
-}
-
-\lstset{style=rdf}
 
 
 \title{Sicherung der Korrektheit von durch LLMs erzeugtem Code}
@@ -91,22 +75,18 @@
 		\if@tempswa\else\vskip-.3cm\fi% set inside beamercolorbox... evil here...
 	\end{beamercolorbox}%
 }
+\addtobeamertemplate{footnote}{}{\vspace{2ex}}
 \makeatother 
-
-\begin{frame}	
-	\frametitle{Gliederung}
-	\tableofcontents
-\end{frame}
 
 \section{Motivation}
 \begin{frame}{Problemstellung}
 	\begin{columns}
 	\column{.5\linewidth}
-P: Output von LLMs nicht immer verlässlich.
+Problem: Output von LLMs nicht immer verlässlich.
 
 \vspace{30mm}
 
-M: Es soll sichergestellt sein, dass durch LLMs erzeugter Code korrekt ist.
+Motivation: Es soll sichergestellt sein, dass durch LLMs erzeugter Code korrekt ist.
     \column{.5\linewidth}
         \begin{figure}
         \centering
@@ -117,6 +97,13 @@ M: Es soll sichergestellt sein, dass durch LLMs erzeugter Code korrekt ist.
     \end{columns}
 \end{frame}
 
+\begin{frame}{Fehlerhafter Code}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\paperwidth]{images/sortedlistwrongnoHE.png}
+        \caption{Von ChatGPT erzeugter inkorrekter Code\cite{liu2024your}}
+    \end{figure}
+
 \begin{frame}{Fragestellung}
 
 \centering Wie kann man die funktionale Korrektheit von durch LLMs erzeugtem Code messen?
@@ -126,8 +113,8 @@ M: Es soll sichergestellt sein, dass durch LLMs erzeugter Code korrekt ist.
 \begin{frame}{Motivation - funktionale Korrektheit von Code}
 Zur Messung der Korrektheit bedarf es einer Auswahl...
 \begin{itemize}
-    \item ... von geeigneten LLMs zur Erzeugung von Code
-    \item ... einer geeigneten Methode für Benchmarking
+    \item ... von zu testenden LLMs zur Erzeugung von Code
+    \item ... einer geeigneten Methode zum Benchmarking
     \item ... geeigneter Metriken zur Bewertung
 \end{itemize}
 \end{frame}
@@ -135,7 +122,7 @@ Zur Messung der Korrektheit bedarf es einer Auswahl...
 \begin{frame}{Rückblick}
 \begin{itemize}
     \item 2021 noch überwiegend Benchmarking durch Vergleich mit Musterlösung(BLEU)\cite{chen2021evaluating}
-    \item Problematik hier bereits 2020 erkannt\cite{ren2020codebleu}
+    \item Problematik hier bekannt und 2020 näher untersucht\cite{ren2020codebleu}
     \item Benchmarking über Unit Tests\cite{osti_10195511}\cite{chen2021evaluating}
 \end{itemize}
 \end{frame}
@@ -147,21 +134,46 @@ HumanEval\footnote{https://github.com/openai/human-eval} ist ein Benchmarkingfra
     \item Signatur der Funktion
     \item Docstring zur Beschreibung der Anforderungen
     \item Beispiele für Input und korrektem Output
-    \item Ground-Truth Implementation
+    \item Ground-Truth-Implementation
     \item Unit Tests passend zur Signatur
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Übersicht über ein HumanEval Problem}
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.8\paperwidth]{images/humanevalproblem.png}
-        \caption{HumanEval Problemstellung bestehend aus Signatur, Docstring und Beispiel In/Outputs.           Ebenfalls wird ein erfolgreich generiertes Codesample gezeigt.\cite{chen2021evaluating}}
-    \end{figure}
+\begin{frame}[fragile]{HumanEval: Promt}
+    \begin{lstlisting}
+    def common(l1: list, l2: list):
+    """Return sorted unique common elements for two lists.
+    >>> common([1, 4, 3, 34, 653, 2, 5],
+               [5, 7, 1, 5, 9, 653, 121])
+    [1, 5, 653]
+    >>> common([5, 3, 2, 8], [3, 2])
+    [2, 3]"""
+    \end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]{HumanEval: Ground-Truth-Implementierung}
+  \begin{lstlisting}
+    ret = set()
+    for e1 in l1:
+        for e2 in l2:
+            if e1 == e2:
+            ret.add(e1)
+    return sorted(list(ret))
+   \end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]{HumanEval: Test}
+    \begin{lstlisting}
+    METADATA = {}
+    def check(candidate):
+    assert candidate([1, 4, 3, 34, 653, 2, 5],
+                     [5, 7, 1, 5, 9, 653, 121]) == [1, 5, 653]
+    assert candidate([5, 3, 2, 8], [3, 2]) == [2, 3]
+    assert candidate([4, 3, 2, 8], [3, 2, 4]) == [2, 3, 4]
+    assert candidate([4, 3, 2, 8], []) == []"
+    \end{lstlisting}
 \end{frame}
 
 \begin{frame}{Metrik zur Messung}
-Genutzt wird die Metrik pass@k. Pro Problem werden k Samples erzeugt. Ein Problem gilt als gelöst, wenn min. ein Sample ein korrektes Ergebnis erzeugt. Anschließend wird der Gesamtanteil der gelösten Probleme berechnet. HumanEval nutzt diese Metrik mit der Anpassung, dass immer n=200 Samples erzeugt werden.
+Genutzt wird die Metrik pass@k. Per Problem werden k Samples erzeugt. Ein Problem gilt als gelöst, wenn min. ein Sample ein korrektes Ergebnis erzeugt. Anschließend wird der Gesamtanteil der gelösten Probleme berechnet. HumanEval nutzt diese Metrik mit der Anpassung, dass immer n=200 Samples erzeugt werden.
     \begin{figure}
         \centering
         \includegraphics[width=0.6\paperwidth]{images/passk.png}
@@ -171,12 +183,15 @@ Genutzt wird die Metrik pass@k. Pro Problem werden k Samples erzeugt. Ein Proble
 
 \begin{frame}{Ergebnisse}
 Zur Durchführung eines ersten Benchmark-Tests mit HumanEval standen folgende LLMs zur Auswahl
-\begin{itemize}
-    \item GPT-Neo(125M - 2.7B Parameter)\cite{black2021gptneo}
-    \item GPT-J (6B Parameter)\cite{wang2021gptj}
-    \item TabNine\footnote{https://www.tabnine.com/}
-    \item Codex (12M - 12B Parameters)
-\end{itemize}
+\begin{table}[]
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Modell} & \textbf{Parameter} & \textbf{Datum} & \textbf{Trainingsdaten} \\ \hline
+GPT-Neo\cite{black2021gptneo} & 125M-2,7B & März 2021 & the Pile\cite{gao2020pile}  \\ \hline
+GPT-J\cite{wang2021gptj} & 6B & Juni 2021 & the Pile  \\ \hline
+TabNine\footnote{https://www.tabnine.com/} &  & Mai 2021 & \\ \hline
+Codex & 12M-12B & Mai 2020 & 54 Mio Python GitHub Repos \\ \hline
+\end{tabular}
 \end{frame}
 
 \begin{frame}{Ergebnisse}
@@ -191,11 +206,36 @@ Zur Durchführung eines ersten Benchmark-Tests mit HumanEval standen folgende LL
 \begin{frame}{Vorstellung Codex}
 GPT-3-Modell spezialisiert auf Codeerzeugung mit folgenden Eigenschaften:\cite{chen2021evaluating}
 \begin{itemize}
-    \item Trainingsdatensatz Mai 2020 zusammengestellt
-    \item Pythoncode aus 54 Mio. Repositories(Github)
+    \item Trainingsdatensatz im Mai 2020 zusammengestellt
+    \item Pythoncode aus 54 Mio Repositories(Github)
     \item 159GB in Python-Dateien <1MB
     \item Filterung von autogenerierten Inhalten und z.B. Quellcode mit mehr als 1000 Zeilen
     \item Insgesamt trainiert mit bis zu 12B Parametern
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Vorstellung Codex}
+\begin{itemize}
+    \item 100B Tokens
+    \item Adam optimizer (\(\beta\) 1 = 0.9, \(\beta\) 2 = 0.95, \(\epsilon\) = $10^{-8}$, weight decay coefficient = 0.1)
+    \item 175 step linear warmup
+    \item Cosine learning rate decay
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Varianten}
+\begin{itemize}
+    \item Codex-S\cite{chen2021evaluating}
+    \begin{itemize}
+        \item Modell mit spezialisierteren Trainingsdaten
+        \item Nutzt Trainingsdaten aus Programmierwettkampf und Projekte mit CI
+    \end{itemize}
+    \item Codex-D\cite{chen2021evaluating}
+    \begin{itemize}
+        \item Modell zur Erzeugung von Docstrings aus Codebeispielen
+        \item Auswertung der Samples per Hand
+    \end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -223,24 +263,8 @@ GPT-3-Modell spezialisiert auf Codeerzeugung mit folgenden Eigenschaften:\cite{c
     \end{figure}
 \end{frame}
 
-\begin{frame}{Varianten}
-\begin{itemize}
-    \item Codex-S\cite{chen2021evaluating}
-    \begin{itemize}
-        \item Spezialisiertes Modell mit szepialisierteren Trainingsdaten
-        \item Nutzt Trainingsdaten aus Programmierwettkampf und Projekte mit CI
-    \end{itemize}
-    \item Codex-D\cite{chen2021evaluating}
-    \begin{itemize}
-        \item Modell zur Erzeugung von Docstrings aus Codebeispielen
-        \item Auswertung der Samlpes per Hand
-    \end{itemize}
-\end{itemize}
-\end{frame}
-
 \begin{frame}{Limitationen}
 \begin{itemize}
-    \item Training nicht Sample-Effizient
     \item Probleme bei zu langen Docstrings mit multiplen Anweisungen
     \item Inkorrekter Code bei korrektem Docstring, aber inkorrekten Beispieloutputs
 \end{itemize}
@@ -260,7 +284,7 @@ Generalisiertes Framework, welches bestehende Benchmarks erweitert\cite{liu2024y
 \begin{itemize}
     \item Erweiterung der Testfälle um vielfaches
     \item Nutzung von LLMs und type-aware Mutation zur Testfallgenerierung
-    \item Testsuitereduktion für effizienteres Ausführung
+    \item Testsuitereduktion für kostengünstigere Ausführung
     \item Auswertung durch diffential testing\cite{mckeeman1998differential}
 \end{itemize}
 \end{frame}
@@ -274,7 +298,7 @@ Generalisiertes Framework, welches bestehende Benchmarks erweitert\cite{liu2024y
 \end{frame}
 
 \begin{frame}{Idee: HumanEval+}
-Auf HumanEval angewendet, wird mit EvalPlus die Testsuites HumanEval+ sowie HumanEval+-Mini zu erzeugt
+Auf HumanEval angewendet, werden mit EvalPlus die Testsuites HumanEval+ sowie HumanEval+-Mini zu erzeugt
     \begin{figure}
         \centering
         \includegraphics[width=0.6\paperwidth]{images/humanevalbenchmarkbulk.png}
@@ -341,22 +365,28 @@ Dies führt im Fall HumanEval+ zu einer Testsuitereduktion des Faktors 47
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Bewertung}
+\begin{frame}{Ähnliche Arbeiten}
 \begin{itemize}
-    \item Benchmarking über Unit Tests chancengleiches Verfahren, welches gute Resultate liefert
-    \item Struktur erlaubt einfache Erweiterung und Granulierung des Testprozesses
+    \item CodeBleu: Anpassung des Bleuscores auf Code durch Berücksichtigung von AST und Codesemantik\cite{ren2020codebleu}
+    \item MBPP(Mostly Basic Programming Problems): Crowd-Sourcing-Projekt mit 974 Programmierproblemen\cite{austin2021program}
+    \item MultiPL-E: Erweiterung der Probleme von HumanEval und MBPP auf 18 Programmiersprachen\cite{cassano2023multipl}
+
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Ausblick}
 \begin{itemize}
-    \item Verbesserung der Codeerzeugung durch LLMs durch Wettkampf
-    \item Erweiterung von Benchmarks bereits im Gang(HumanEval-X\cite{zheng2023codegeex} for C++, JS und Go)
+    \item Verbesserung der Codeerzeugung durch LLMs durch Wettkampf\footnote{https://evalplus.github.io/leaderboard.html}
+    \item Erweiterung von Benchmarks bereits im Gang(HumanEval-X\cite{zheng2023codegeex} for C++, JS und Go, MultiPL-E)
 \end{itemize}
 \end{frame}
 
-\begin{frame}{}
-\centering Vielen Dank für Ihre Aufmerksamkeit! Fragen?
+\begin{frame}{Bewertung}
+\begin{itemize}
+    \item Benchmarking über Unit Tests welches auf den ersten Blick gute Resultate liefert
+    \item Struktur erlaubt einfache Erweiterung und Granulierung des Testprozesses
+    \item Noch ein sehr weiter weg zum "perfekten" LLM
+\end{itemize}
 \end{frame}
 
 \section{Quellen}
